@@ -27,7 +27,7 @@ func TestHealthCheck(t *testing.T) {
 		t.Fatalf("Error reading response body: %v", err)
 	}
 
-	expectedBody := "Status: available\nVersion: 1.0.0\n"
+	expectedBody := "{\"status\":\"available\",\"system_info\":{\"version\":\"1.0.0\"}}\n"
 	if string(body) != expectedBody {
 		t.Errorf("Expected response body %q, got %q", expectedBody, string(body))
 	}
