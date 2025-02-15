@@ -12,6 +12,7 @@ func (app *application) routes() *httprouter.Router {
 	router.MethodNotAllowed = http.HandlerFunc(app.methodNotAllowedResponse)
 
 	router.HandlerFunc(http.MethodGet, "/healthcheck", app.healthcheckHandler)
+	router.HandlerFunc(http.MethodPost, "/api/auth", app.createAuthenticationTokenHandler)
 
 	return router
 }

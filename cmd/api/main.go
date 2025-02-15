@@ -1,6 +1,7 @@
 package main
 
 import (
+	"avito-shop/internal/data"
 	"context"
 	"database/sql"
 	"fmt"
@@ -27,6 +28,9 @@ type config struct {
 		MaxIdleConns int    `env:"MAX_IDLE_CONNS"`
 		MaxIdleTime  string `env:"MAX_IDLE_TIME"`
 	}
+	Jwt struct {
+		Secret string `env:"JWT_SECRET"`
+	}
 }
 
 func (cfg *config) getDSN() string {
@@ -37,6 +41,7 @@ func (cfg *config) getDSN() string {
 type application struct {
 	config config
 	logger *log.Logger
+	models data.Models
 }
 
 func main() {
@@ -70,6 +75,7 @@ func main() {
 	app := &application{
 		config: cfg,
 		logger: logger,
+		models: data.NewModels(db),
 	}
 
 	srv := &http.Server{
