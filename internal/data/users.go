@@ -16,6 +16,12 @@ type User struct {
 	Password  password  `json:"-"`
 }
 
+var AnonymousUser = &User{}
+
+func (u *User) IsAnonymous() bool {
+	return u == AnonymousUser
+}
+
 type password struct {
 	plaintext *string
 	hash      []byte
@@ -46,25 +52,13 @@ func (p *password) Matches(plaintextPassword string) (bool, error) {
 
 func ValidateUsername(v *validator.Validator, username string) {
 	v.Check(username != "", "username", "must be provided")
-	v.Check(len(username) >= 8, "username", "must be at least 3 bytes long")
+	v.Check(len(username) >= 3, "username", "must be at least 3 bytes long")
 	v.Check(len(username) <= 25, "username", "must not be more than 25 bytes long")
 }
 func ValidatePasswordPlaintext(v *validator.Validator, password string) {
 	v.Check(password != "", "password", "must be provided")
 	v.Check(len(password) >= 8, "password", "must be at least 8 bytes long")
 	v.Check(len(password) <= 72, "password", "must not be more than 72 bytes long")
-}
-func ValidateUser(v *validator.Validator, user *User) {
-
-	ValidateUsername(v, user.Username)
-
-	if user.Password.plaintext != nil {
-		ValidatePasswordPlaintext(v, *user.Password.plaintext)
-	}
-
-	if user.Password.hash == nil {
-		panic("missing password hash for user")
-	}
 }
 
 var (
@@ -95,6 +89,32 @@ func (m UserModel) Insert(user *User) error {
 		}
 	}
 	return nil
+}
+
+func (m UserModel) Get(id string) (*User, error) {
+	query := `
+			SELECT id, created_at, username, password_hash
+			FROM users
+			WHERE id = $1
+			`
+	var user User
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	err := m.DB.QueryRowContext(ctx, query, id).Scan(
+		&user.ID,
+		&user.CreatedAt,
+		&user.Username,
+		&user.Password.hash,
+	)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrRecordNotFound
+		default:
+			return nil, err
+		}
+	}
+	return &user, nil
 }
 
 func (m UserModel) GetByUsername(username string) (*User, error) {

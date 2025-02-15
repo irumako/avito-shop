@@ -31,7 +31,6 @@ func (app *application) createAuthenticationTokenHandler(w http.ResponseWriter, 
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrRecordNotFound):
-			app.logger.Printf("Auth: username не найден")
 			user = &data.User{
 				Username: input.Username,
 			}
@@ -41,13 +40,12 @@ func (app *application) createAuthenticationTokenHandler(w http.ResponseWriter, 
 				app.serverErrorResponse(w, r, err)
 				return
 			}
-			app.logger.Printf("Auth: Пароль установлен")
+
 			err = app.models.Users.Insert(user)
 			if err != nil {
 				app.serverErrorResponse(w, r, err)
 				return
 			}
-			app.logger.Printf("Auth: Пользователь в бд")
 		default:
 			app.serverErrorResponse(w, r, err)
 			return

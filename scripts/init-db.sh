@@ -13,10 +13,10 @@ sleep 2
 
 echo "Создание пользователя admin и заполнение таблицы мерча..."
 psql "$DATABASE_URL" <<'EOF'
--- Пароль "admin"
+-- Пароль "adminpassword"
 WITH admin_insert AS (
     INSERT INTO users (username, password_hash)
-    VALUES ('admin', '$2y$10$lhwQ9O9.MIqv9ALICmgak.tUAF6SpNdeCxE1AcfDghbkrRwwvKXZC')
+    VALUES ('admin', '$2a$12$TP9FfsHz8N4whAawGqzSfuyf5QqYhBSAAKA8.c2I4kMg6zSmfPikO')
     ON CONFLICT (username) DO NOTHING
     RETURNING id
 ),
