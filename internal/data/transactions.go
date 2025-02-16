@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"github.com/stretchr/testify/mock"
 	"math"
 	"time"
 )
@@ -186,4 +187,29 @@ func (t TransactionModel) GetByReceiverWalletId(id string) ([]Transaction, error
 func ValidateAmount(v *validator.Validator, amount float64) {
 	v.Check(amount >= 0, "amount", "must be positive")
 	v.Check(amount <= math.Pow(10, 10), "amount", "too large")
+}
+
+type MockTransactionModel struct{ mock.Mock }
+
+func (t *MockTransactionModel) SendCoinTX(transaction *Transaction) error {
+	args := t.Called(transaction)
+	return args.Error(0)
+}
+
+func (t *MockTransactionModel) GetByReceiverWalletId(id string) ([]Transaction, error) {
+	args := t.Called(id)
+	transactions, ok := args.Get(0).([]Transaction)
+	if !ok && args.Get(0) != nil {
+		panic("expected []Transaction type for GetByReceiverWalletId")
+	}
+	return transactions, args.Error(1)
+}
+
+func (t *MockTransactionModel) GetBySenderWalletId(id string) ([]Transaction, error) {
+	args := t.Called(id)
+	transactions, ok := args.Get(0).([]Transaction)
+	if !ok && args.Get(0) != nil {
+		panic("expected []Transaction type for GetByReceiverWalletId")
+	}
+	return transactions, args.Error(1)
 }

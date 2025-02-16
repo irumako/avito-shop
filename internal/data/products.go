@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"github.com/stretchr/testify/mock"
 	"time"
 )
 
@@ -65,4 +66,26 @@ func (p ProductModel) GetByName(name string) (*Product, error) {
 		}
 	}
 	return &product, nil
+}
+
+type MockProductModel struct{ mock.Mock }
+
+func (p *MockProductModel) Get(id string) (*Product, error) {
+	args := p.Called(id)
+	prod := args.Get(0)
+
+	if prod == nil {
+		return nil, args.Error(1)
+	}
+	return prod.(*Product), args.Error(1)
+}
+
+func (p *MockProductModel) GetByName(name string) (*Product, error) {
+	args := p.Called(name)
+	prod := args.Get(0)
+
+	if prod == nil {
+		return nil, args.Error(1)
+	}
+	return prod.(*Product), args.Error(1)
 }

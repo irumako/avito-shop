@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"github.com/stretchr/testify/mock"
 	"time"
 )
 
@@ -119,4 +120,20 @@ func (o OrderModel) GetByWalletId(id string) ([]Order, error) {
 	}
 
 	return orders, nil
+}
+
+type MockOrderModel struct{ mock.Mock }
+
+func (o *MockOrderModel) BuyProductTX(order *Order) error {
+	args := o.Called(order)
+	return args.Error(0)
+}
+
+func (o *MockOrderModel) GetByWalletId(id string) ([]Order, error) {
+	args := o.Called(id)
+	orders, ok := args.Get(0).([]Order)
+	if !ok && args.Get(0) != nil {
+		panic("expected []Order type for GetByWalletId")
+	}
+	return orders, args.Error(1)
 }

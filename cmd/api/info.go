@@ -7,16 +7,13 @@ import (
 )
 
 func (app *application) getInfoHandler(w http.ResponseWriter, r *http.Request) {
-
 	user := app.contextGetUser(r)
-	app.logger.Println("info")
 
 	wallet, err := app.models.Wallets.GetByUserId(user.ID)
 	if err != nil {
 		app.notFoundResponse(w, r)
 		return
 	}
-	app.logger.Println("wallet")
 	orders, err := app.models.Orders.GetByWalletId(wallet.ID)
 	if err != nil {
 		if !errors.Is(err, data.ErrRecordNotFound) {
@@ -24,7 +21,6 @@ func (app *application) getInfoHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	app.logger.Println("orders")
 
 	type item struct {
 		Type     string `json:"type"`

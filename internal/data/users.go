@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"github.com/stretchr/testify/mock"
 	"golang.org/x/crypto/bcrypt"
 	"time"
 )
@@ -169,4 +170,36 @@ func (m UserModel) Update(user *User) error {
 		}
 	}
 	return nil
+}
+
+type MockUserModel struct{ mock.Mock }
+
+func (u *MockUserModel) Insert(user *User) error {
+	args := u.Called(user)
+	return args.Error(0)
+}
+
+func (u *MockUserModel) Update(user *User) error {
+	args := u.Called(user)
+	return args.Error(0)
+}
+
+func (u *MockUserModel) Get(id string) (*User, error) {
+	args := u.Called(id)
+	prod := args.Get(0)
+
+	if prod == nil {
+		return nil, args.Error(1)
+	}
+	return prod.(*User), args.Error(1)
+}
+
+func (u *MockUserModel) GetByUsername(username string) (*User, error) {
+	args := u.Called(username)
+	prod := args.Get(0)
+
+	if prod == nil {
+		return nil, args.Error(1)
+	}
+	return prod.(*User), args.Error(1)
 }

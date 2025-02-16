@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"github.com/stretchr/testify/mock"
 	"time"
 )
 
@@ -120,4 +121,33 @@ func (w WalletModel) Update(wallet *Wallet) error {
 		}
 	}
 	return nil
+}
+
+type MockWalletModel struct{ mock.Mock }
+
+func (w *MockWalletModel) Insert(wallet *Wallet) error {
+	args := w.Called(wallet)
+	return args.Error(0)
+}
+
+func (w *MockWalletModel) Get(id string) (*Wallet, error) {
+	args := w.Called(id)
+	wallet := args.Get(0)
+	if wallet == nil {
+		return nil, args.Error(1)
+	}
+	return wallet.(*Wallet), args.Error(1)
+}
+
+func (w *MockWalletModel) GetByUserId(userId string) (*Wallet, error) {
+	args := w.Called(userId)
+	wallet := args.Get(0)
+	if wallet == nil {
+		return nil, args.Error(1)
+	}
+	return wallet.(*Wallet), args.Error(1)
+}
+func (w *MockWalletModel) Update(wallet *Wallet) error {
+	args := w.Called(wallet)
+	return args.Error(0)
 }
