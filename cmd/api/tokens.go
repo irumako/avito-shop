@@ -5,7 +5,6 @@ import (
 	"avito-shop/internal/validator"
 	"errors"
 	"github.com/pascaldekloe/jwt"
-	"math/rand"
 	"net/http"
 	"time"
 )
@@ -48,11 +47,9 @@ func (app *application) createAuthenticationTokenHandler(w http.ResponseWriter, 
 				return
 			}
 
-			balance := rand.Intn(100000-1000+1) + 1000
-
 			wallet := &data.Wallet{
 				UserId:  user.ID,
-				Balance: float64(balance),
+				Balance: 1000,
 			}
 
 			err = app.models.Wallets.Insert(wallet)
