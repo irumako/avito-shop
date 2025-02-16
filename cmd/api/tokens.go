@@ -91,7 +91,7 @@ func (app *application) createAuthenticationTokenHandler(w http.ResponseWriter, 
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusCreated, envelope{"token": string(jwtBytes)}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"token": string(jwtBytes)}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
