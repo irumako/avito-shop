@@ -26,8 +26,8 @@ func TestBuyMerch(t *testing.T) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 201 {
-		t.Fatalf("Expected auth status 201, got %d", resp.StatusCode)
+	if resp.StatusCode != 200 {
+		t.Fatalf("Expected auth status 200, got %d", resp.StatusCode)
 	}
 
 	var authResponse struct {

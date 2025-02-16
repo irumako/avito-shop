@@ -21,7 +21,6 @@ func TestSendCoin(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Admin auth failed: %v", err)
 	}
-	t.Logf("Admin token: %s", adminToken)
 
 	// Создание irumako
 	irumakoAuthURL := "http://localhost:8080/api/auth"
@@ -33,7 +32,6 @@ func TestSendCoin(t *testing.T) {
 	if err != nil {
 		t.Fatalf("irumako auth failed: %v", err)
 	}
-	t.Logf("irumako token: %s", irumakoToken)
 
 	// Отправляем монеты admin -> irumako
 	sendCoinURL := "http://localhost:8080/api/sendCoin"
