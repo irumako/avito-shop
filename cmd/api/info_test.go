@@ -16,7 +16,6 @@ import (
 )
 
 func TestGetInfoHandler(t *testing.T) {
-	// Create mocks for the models we already have.
 	mockWallets := new(data.MockWalletModel)
 	mockOrders := new(data.MockOrderModel)
 	mockProducts := new(data.MockProductModel)
@@ -57,7 +56,6 @@ func TestGetInfoHandler(t *testing.T) {
 				mockWallets.On("GetByUserId", testUser.ID).Return(nil, sql.ErrNoRows)
 			},
 			expectedStatus: http.StatusNotFound,
-			// Your notFoundResponse returns an envelope with key "errors" and message "Could not be found"
 			expectedEnvelope: map[string]interface{}{
 				"errors": "Could not be found",
 			},
@@ -65,7 +63,6 @@ func TestGetInfoHandler(t *testing.T) {
 		{
 			name: "Successful info with no orders and no transactions",
 			setupMocks: func() {
-				// Return a valid wallet.
 				wallet := &data.Wallet{
 					ID:        "wallet123",
 					Balance:   1000.0,
@@ -75,11 +72,9 @@ func TestGetInfoHandler(t *testing.T) {
 				mockWallets.ExpectedCalls = nil
 				mockWallets.On("GetByUserId", testUser.ID).Return(wallet, nil)
 
-				// Orders: return an empty slice.
 				mockOrders.ExpectedCalls = nil
 				mockOrders.On("GetByWalletId", wallet.ID).Return([]data.Order{}, nil)
 
-				// Transactions: simulate "not found" errors.
 				mockTransactions.ExpectedCalls = nil
 				mockTransactions.On("GetByReceiverWalletId", wallet.ID).Return([]data.Transaction{}, data.ErrRecordNotFound)
 				mockTransactions.On("GetBySenderWalletId", wallet.ID).Return([]data.Transaction{}, data.ErrRecordNotFound)
@@ -97,7 +92,6 @@ func TestGetInfoHandler(t *testing.T) {
 		{
 			name: "Successful info with orders and transactions",
 			setupMocks: func() {
-				// Wallet found.
 				wallet := &data.Wallet{
 					ID:        "wallet123",
 					Balance:   1500.0,
@@ -107,7 +101,6 @@ func TestGetInfoHandler(t *testing.T) {
 				mockWallets.ExpectedCalls = nil
 				mockWallets.On("GetByUserId", testUser.ID).Return(wallet, nil)
 
-				// Orders: return one order.
 				order := data.Order{
 					ID:           "order1",
 					WalletId:     wallet.ID,
@@ -118,7 +111,6 @@ func TestGetInfoHandler(t *testing.T) {
 				mockOrders.ExpectedCalls = nil
 				mockOrders.On("GetByWalletId", wallet.ID).Return([]data.Order{order}, nil)
 
-				// Product: return a product for the order.
 				product := &data.Product{
 					ID:   "prod1",
 					Name: "Laptop",
@@ -127,8 +119,6 @@ func TestGetInfoHandler(t *testing.T) {
 				mockProducts.ExpectedCalls = nil
 				mockProducts.On("Get", order.ProductId).Return(product, nil)
 
-				// Transactions: simulate one received transaction.
-				// (For a received transaction, the sender wallet ID is "walletSender")
 				txReceived := data.Transaction{
 					SenderWalletId:   "walletSender",
 					ReceiverWalletId: wallet.ID,
@@ -137,7 +127,6 @@ func TestGetInfoHandler(t *testing.T) {
 				mockTransactions.ExpectedCalls = nil
 				mockTransactions.On("GetByReceiverWalletId", wallet.ID).Return([]data.Transaction{txReceived}, nil)
 
-				// And one sent transaction.
 				txSent := data.Transaction{
 					SenderWalletId:   wallet.ID,
 					ReceiverWalletId: "walletReceiver",
@@ -145,17 +134,15 @@ func TestGetInfoHandler(t *testing.T) {
 				}
 				mockTransactions.On("GetBySenderWalletId", wallet.ID).Return([]data.Transaction{txSent}, nil)
 
-				// For the received transaction, look up the sender's wallet.
 				walletSender := &data.Wallet{
 					ID:        "walletSender",
 					UserId:    "userSender",
 					Balance:   0,
 					UpdatedAt: time.Now(),
 				}
-				// Assuming Wallets.Get is available.
+
 				mockWallets.On("Get", "walletSender").Return(walletSender, nil)
 
-				// For the sent transaction, look up the receiver's wallet.
 				walletReceiver := &data.Wallet{
 					ID:        "walletReceiver",
 					UserId:    "userReceiver",
@@ -164,13 +151,11 @@ func TestGetInfoHandler(t *testing.T) {
 				}
 				mockWallets.On("Get", "walletReceiver").Return(walletReceiver, nil)
 
-				// Now, for Users: for walletSender, return a user with Username "Alice".
 				mockUsers.ExpectedCalls = nil
 				mockUsers.On("Get", "userSender").Return(&data.User{
 					ID:       "userSender",
 					Username: "Alice",
 				}, nil)
-				// For walletReceiver, return a user with Username "Bob".
 				mockUsers.On("Get", "userReceiver").Return(&data.User{
 					ID:       "userReceiver",
 					Username: "Bob",
@@ -205,7 +190,6 @@ func TestGetInfoHandler(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Reset mock expectations.
 			mockWallets.ExpectedCalls = nil
 			mockOrders.ExpectedCalls = nil
 			mockProducts.ExpectedCalls = nil
@@ -214,30 +198,22 @@ func TestGetInfoHandler(t *testing.T) {
 
 			tt.setupMocks()
 
-			// Create a new HTTP request.
 			req := httptest.NewRequest("GET", "/info", nil)
-			// Insert the dummy authenticated user in the context using the key "user".
 			req = req.WithContext(context.WithValue(req.Context(), userContextKey, testUser))
-			// (If your routing requires httprouter.Params, set it as well.)
 			req = req.WithContext(context.WithValue(req.Context(), httprouter.ParamsKey, httprouter.Params{}))
 
 			rr := httptest.NewRecorder()
 
-			// Call the handler.
 			app.getInfoHandler(rr, req)
 
-			// Check the status code.
 			assert.Equal(t, tt.expectedStatus, rr.Code, tt.name)
 
-			// Unmarshal the JSON response.
 			var got map[string]interface{}
 			err := json.Unmarshal(rr.Body.Bytes(), &got)
 			assert.NoError(t, err, tt.name)
 
-			// Compare the envelope.
 			assert.Equal(t, tt.expectedEnvelope, got, tt.name)
 
-			// Assert that all mock expectations were met.
 			mockWallets.AssertExpectations(t)
 			mockOrders.AssertExpectations(t)
 			mockProducts.AssertExpectations(t)

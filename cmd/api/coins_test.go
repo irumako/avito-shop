@@ -16,7 +16,6 @@ import (
 )
 
 func TestSendCoinHandler(t *testing.T) {
-	// Create mocks for Wallets, Users, and Transactions.
 	mockWallets := new(data.MockWalletModel)
 	mockUsers := new(data.MockUserModel)
 	mockTransactions := new(data.MockTransactionModel)
@@ -27,28 +26,22 @@ func TestSendCoinHandler(t *testing.T) {
 		Transactions: mockTransactions,
 	}
 
-	// Create a minimal application instance with a logger.
 	app := &application{
 		models: models,
 		logger: log.New(io.Discard, "", 0),
 	}
 
-	// Define a dummy authenticated sender.
-	// Ensure that the type matches what contextGetUser expects.
-	// For this test we assume that our application expects a *struct{ID string}
-	// stored under the "user" key.
 	testUser := &data.User{
 		ID:       "sender1",
 		Username: "testuser",
 	}
 
-	// Table-driven test cases.
 	tests := []struct {
 		name             string
 		requestBody      string
 		setupMocks       func()
 		expectedStatus   int
-		expectedResponse interface{} // nil for success or a map for error responses; for validation, we check for presence of an "errors" key.
+		expectedResponse interface{}
 	}{
 		{
 			name:           "Bad JSON input",
@@ -60,11 +53,10 @@ func TestSendCoinHandler(t *testing.T) {
 			},
 		},
 		{
-			name:           "Validation error (empty toUser and zero amount)",
-			requestBody:    `{"toUser": "", "amount": 0}`,
-			setupMocks:     func() {},
-			expectedStatus: http.StatusUnprocessableEntity,
-			// In this case we simply check that the JSON envelope has an "errors" key.
+			name:             "Validation error (empty toUser and zero amount)",
+			requestBody:      `{"toUser": "", "amount": 0}`,
+			setupMocks:       func() {},
+			expectedStatus:   http.StatusUnprocessableEntity,
 			expectedResponse: "validation",
 		},
 		{
@@ -83,11 +75,9 @@ func TestSendCoinHandler(t *testing.T) {
 			name:        "Receiver not found",
 			requestBody: `{"toUser": "receiver", "amount": 100}`,
 			setupMocks: func() {
-				// Sender wallet exists.
 				wallet := &data.Wallet{ID: "wallet_sender", UserId: "sender1", Balance: 1000}
 				mockWallets.ExpectedCalls = nil
 				mockWallets.On("GetByUserId", "sender1").Return(wallet, nil)
-				// Receiver lookup fails.
 				mockUsers.ExpectedCalls = nil
 				mockUsers.On("GetByUsername", "receiver").Return(nil, data.ErrRecordNotFound)
 			},
@@ -98,15 +88,12 @@ func TestSendCoinHandler(t *testing.T) {
 			name:        "Receiver wallet not found",
 			requestBody: `{"toUser": "receiver", "amount": 100}`,
 			setupMocks: func() {
-				// Sender wallet exists.
 				wallet := &data.Wallet{ID: "wallet_sender", UserId: "sender1", Balance: 1000}
 				mockWallets.ExpectedCalls = nil
 				mockWallets.On("GetByUserId", "sender1").Return(wallet, nil)
-				// Receiver exists.
 				receiver := &data.User{ID: "receiver1", Username: "receiver"}
 				mockUsers.ExpectedCalls = nil
 				mockUsers.On("GetByUsername", "receiver").Return(receiver, nil)
-				// Receiver wallet lookup fails.
 				mockWallets.On("GetByUserId", "receiver1").Return(nil, data.ErrRecordNotFound)
 			},
 			expectedStatus:   http.StatusNotFound,
@@ -116,18 +103,14 @@ func TestSendCoinHandler(t *testing.T) {
 			name:        "Insufficient funds",
 			requestBody: `{"toUser": "receiver", "amount": 100}`,
 			setupMocks: func() {
-				// Sender wallet exists but has low balance.
 				wallet := &data.Wallet{ID: "wallet_sender", UserId: "sender1", Balance: 50}
 				mockWallets.ExpectedCalls = nil
 				mockWallets.On("GetByUserId", "sender1").Return(wallet, nil)
-				// Receiver exists.
 				receiver := &data.User{ID: "receiver1", Username: "receiver"}
 				mockUsers.ExpectedCalls = nil
 				mockUsers.On("GetByUsername", "receiver").Return(receiver, nil)
-				// Receiver wallet exists.
 				receiverWallet := &data.Wallet{ID: "wallet_receiver", UserId: "receiver1", Balance: 500}
 				mockWallets.On("GetByUserId", "receiver1").Return(receiverWallet, nil)
-				// Transaction fails with insufficient funds.
 				mockTransactions.ExpectedCalls = nil
 				mockTransactions.On("SendCoinTX", mock.MatchedBy(func(tx *data.Transaction) bool {
 					return tx.SenderWalletId == wallet.ID &&
@@ -142,18 +125,14 @@ func TestSendCoinHandler(t *testing.T) {
 			name:        "Generic transaction error",
 			requestBody: `{"toUser": "receiver", "amount": 100}`,
 			setupMocks: func() {
-				// Sender wallet exists.
 				wallet := &data.Wallet{ID: "wallet_sender", UserId: "sender1", Balance: 1000}
 				mockWallets.ExpectedCalls = nil
 				mockWallets.On("GetByUserId", "sender1").Return(wallet, nil)
-				// Receiver exists.
 				receiver := &data.User{ID: "receiver1", Username: "receiver"}
 				mockUsers.ExpectedCalls = nil
 				mockUsers.On("GetByUsername", "receiver").Return(receiver, nil)
-				// Receiver wallet exists.
 				receiverWallet := &data.Wallet{ID: "wallet_receiver", UserId: "receiver1", Balance: 500}
 				mockWallets.On("GetByUserId", "receiver1").Return(receiverWallet, nil)
-				// Transaction fails with a generic error.
 				mockTransactions.ExpectedCalls = nil
 				mockTransactions.On("SendCoinTX", mock.MatchedBy(func(tx *data.Transaction) bool {
 					return tx.SenderWalletId == wallet.ID &&
@@ -168,18 +147,14 @@ func TestSendCoinHandler(t *testing.T) {
 			name:        "Success",
 			requestBody: `{"toUser": "receiver", "amount": 100}`,
 			setupMocks: func() {
-				// Sender wallet exists.
 				wallet := &data.Wallet{ID: "wallet_sender", UserId: "sender1", Balance: 1000}
 				mockWallets.ExpectedCalls = nil
 				mockWallets.On("GetByUserId", "sender1").Return(wallet, nil)
-				// Receiver exists.
 				receiver := &data.User{ID: "receiver1", Username: "receiver"}
 				mockUsers.ExpectedCalls = nil
 				mockUsers.On("GetByUsername", "receiver").Return(receiver, nil)
-				// Receiver wallet exists.
 				receiverWallet := &data.Wallet{ID: "wallet_receiver", UserId: "receiver1", Balance: 500}
 				mockWallets.On("GetByUserId", "receiver1").Return(receiverWallet, nil)
-				// Transaction succeeds.
 				mockTransactions.ExpectedCalls = nil
 				mockTransactions.On("SendCoinTX", mock.MatchedBy(func(tx *data.Transaction) bool {
 					return tx.SenderWalletId == wallet.ID &&
@@ -188,39 +163,32 @@ func TestSendCoinHandler(t *testing.T) {
 				})).Return(nil)
 			},
 			expectedStatus:   http.StatusOK,
-			expectedResponse: nil, // No JSON response body on success.
+			expectedResponse: nil,
 		},
 	}
 
-	// Run each test case.
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Reset mock expectations.
 			mockWallets.ExpectedCalls = nil
 			mockUsers.ExpectedCalls = nil
 			mockTransactions.ExpectedCalls = nil
 
 			tt.setupMocks()
 
-			// Create a new request with the JSON body.
 			req := httptest.NewRequest("POST", "/send", nil)
 			req.Body = io.NopCloser(strings.NewReader(tt.requestBody))
-			// Inject the dummy authenticated sender into the request context.
 			req = req.WithContext(context.WithValue(req.Context(), userContextKey, testUser))
 
 			rr := httptest.NewRecorder()
 			app.sendCoinHandler(rr, req)
 
-			// Assert the HTTP status code.
 			assert.Equal(t, tt.expectedStatus, rr.Code, tt.name)
 
-			// If an error response is expected, unmarshal the response body and check.
 			if tt.expectedResponse != nil {
 				var got map[string]interface{}
 				err := json.Unmarshal(rr.Body.Bytes(), &got)
 				assert.NoError(t, err, tt.name)
 				if tt.expectedResponse == "validation" {
-					// For validation errors, check that an "errors" key exists.
 					_, ok := got["errors"]
 					assert.True(t, ok, tt.name)
 				} else {
