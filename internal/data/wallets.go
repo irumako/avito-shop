@@ -45,6 +45,32 @@ func (w WalletModel) Insert(wallet *Wallet) error {
 	return nil
 }
 
+func (w WalletModel) Get(id string) (*Wallet, error) {
+	query := `
+			SELECT id, updated_at, user_id, balance
+			FROM wallets
+			WHERE id = $1
+			`
+	var wallet Wallet
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	err := w.DB.QueryRowContext(ctx, query, id).Scan(
+		&wallet.ID,
+		&wallet.UpdatedAt,
+		&wallet.UserId,
+		&wallet.Balance,
+	)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrRecordNotFound
+		default:
+			return nil, err
+		}
+	}
+	return &wallet, nil
+}
+
 func (w WalletModel) GetByUserId(userId string) (*Wallet, error) {
 	query := `
 			SELECT id, updated_at, user_id, balance

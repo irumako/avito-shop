@@ -13,6 +13,8 @@ func (app *application) routes() http.Handler {
 
 	router.HandlerFunc(http.MethodGet, "/healthcheck", app.healthcheckHandler)
 
+	router.HandlerFunc(http.MethodGet, "/api/info", app.requireAuthenticatedUser(app.getInfoHandler))
+	router.HandlerFunc(http.MethodPost, "/api/sendCoin", app.requireAuthenticatedUser(app.sendCoinHandler))
 	router.HandlerFunc(http.MethodPost, "/api/buy/:item", app.requireAuthenticatedUser(app.buyProductHandler))
 	router.HandlerFunc(http.MethodGet, "/api/auth", app.createAuthenticationTokenHandler)
 
